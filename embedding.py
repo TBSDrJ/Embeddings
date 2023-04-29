@@ -18,6 +18,7 @@
 import tensorflow as tf
 import tensorflow.keras.utils as utils
 import tensorflow.keras.layers as layers
+from tensorflow.keras import Sequential
 
 BATCH_SIZE = 1024
 # If you are using tf version 2.10+, you can avoid using the seed
@@ -27,9 +28,12 @@ SEED = 42
 VALIDATION_SPLIT = 0.3
 # Set this to some integer to limit the size of the vocabulary, or None
 #   to use every word that is found.
-VOCAB_SIZE = 100
+VOCAB_SIZE = 10000
 # I believe that this truncates the length of each review to 100 words.
 SEQUENCE_LENGTH = 100
+# Number of dimensions to capture the meaning of each word.  
+#   word2vec used 300 dimensions.
+EMBEDDING_DIM = 256
 
 train = utils.text_dataset_from_directory(
     'imdb/combined',
@@ -67,4 +71,18 @@ vectorize_layer = layers.TextVectorization(
 train_text = train.map(lambda x, y: x)
 vectorize_layer.adapt(train_text)
 vocab = vectorize_layer.get_vocabulary()
-print(vocab)
+
+model = Sequential(
+    [
+        vectorize_layer,
+        layers.Embedding(VOCAB_SIZE, EMBEDDING_DIM, name='embedding'),
+        layers.GlobalAveragePooling1D(),
+        layers.Dense(256, activation='relu'),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(16, activation='relu'),
+        layers.Dense(4, activation='relu'),
+        layers.Dense(1),
+    ]
+)
+
+print(model.summary())
