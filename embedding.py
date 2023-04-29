@@ -18,6 +18,8 @@
 import tensorflow as tf
 import tensorflow.keras.utils as utils
 import tensorflow.keras.layers as layers
+import tensorflow.keras.optimizers as optimizers
+import tensorflow.keras.losses as losses
 from tensorflow.keras import Sequential
 
 BATCH_SIZE = 1024
@@ -85,4 +87,37 @@ model = Sequential(
     ]
 )
 
+model.compile(
+    optimizer = optimizers.Adam(learning_rate=10**(-3)),
+    loss = losses.BinaryCrossentropy(from_logits=True),
+    metrics=['accuracy'],
+)
+
 print(model.summary())
+
+model.fit(
+    train,
+    validation_data = valid,
+    epochs = 3,
+)
+
+weights = model.get_layer('embedding').get_weights()[0]
+
+find_key = vocab.index('excellent')
+weights_key = weights[find_key]
+closest = []
+for i, word in enumerate(vocab):
+    wgts = weights[i]
+    distances = [abs(weights_key[j] - wgts[j]) for j in range(EMBEDDING_DIM)]
+    distance = sum(distances)
+    if len(closest) < 11:
+        closest.append((i, distance))
+        closest.sort(key=lambda x: x[1])
+    else:
+        if distance < closest[10][1]:
+            closest.pop(10)
+            closest.append((i, distance))
+            closest.sort(key=lambda x: x[1])
+
+for i, dist in closest:
+    print(vocab[i])
